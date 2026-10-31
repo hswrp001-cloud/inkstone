@@ -68,7 +68,7 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     <div className="flex min-h-0 flex-1">
       {role !== 'viewer' && layout !== 'preview' && <div className={`min-h-0 min-w-0 flex-1 overflow-auto ${layout === 'split' ? 'border-r border-[var(--border-subtle)]' : ''}`}>
         {role === 'viewer'
-          ? <Preview content={content} noteTitle={title} className="h-full"/>
+          ? <Preview content={content} noteId={documentId} noteTitle={title} className="h-full"/>
           : <DeferredCodeEditor visible value={content} onChange={value => { setContent(value); setDirty(true) }} settings={settings.editor} sources={sources} handlers={handlers} onReady={setView} placeholder="Write your shared Markdown document…" className="h-full"/>}
       </div>}
       {(role === 'viewer' || layout !== 'edit') && <div className="min-h-0 min-w-0 flex-1 overflow-auto"><Preview content={content} noteTitle={title} className="h-full"/></div>}

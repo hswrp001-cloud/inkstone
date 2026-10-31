@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ChevronRight, LogOut, Waypoints } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FolderKanban, LogOut, Waypoints } from 'lucide-react';
 import { ACCENTS } from '@shared/constants';
 import { Avatar } from '../../components/primitives';
 import { t } from '../../lib/i18n';
@@ -30,6 +30,7 @@ export function MobileAccount() {
         <div className="shrink-0 divide-y divide-[var(--border-subtle)] overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)]">
             {SECTIONS.map((item) => <button key={item.id} type="button" onClick={() => { warmSettingsSection(item.id); setSection(item.id); }} className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-sm active:bg-[var(--bg-active)]"><span aria-hidden="true" className="text-[var(--accent)]">{item.icon}</span><span className="flex-1">{item.label()}</span><ChevronRight size={16} aria-hidden="true" className="text-[var(--text-tertiary)]"/></button>)}
             <button type="button" onClick={() => useUi.getState().openPanel('graph')} className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-sm active:bg-[var(--bg-active)]"><Waypoints size={16} aria-hidden="true"/><span className="flex-1">{t('common.graph')}</span><ChevronRight size={16} aria-hidden="true"/></button>
+            <a href="/workspaces" className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-sm active:bg-[var(--bg-active)]"><FolderKanban size={16} aria-hidden="true"/><span className="flex-1">Workspaces</span><ChevronRight size={16} aria-hidden="true"/></a>
         </div>
         <div className="min-h-6 flex-1"/>
         <button type="button" disabled={loggingOut} aria-busy={loggingOut} onClick={async () => { setLoggingOut(true); try { await logout(); } finally { setLoggingOut(false); } }} className="mt-4 flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-sm text-[var(--danger)] active:bg-[var(--bg-active)] disabled:opacity-50"><LogOut size={16} aria-hidden="true"/>{t('sidebar.log_out')}</button>

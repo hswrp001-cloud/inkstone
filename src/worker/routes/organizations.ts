@@ -134,14 +134,15 @@ organizationRoutes.post('/:orgId/workspaces/:workspaceId/documents',async c=>{
   const userId=c.get('userId'),orgId=c.req.param('orgId'),workspaceId=c.req.param('workspaceId')
   const member=await membership(c.env.DB,orgId,userId)
   if(!member||!canWrite(member.role)) throw ApiError.forbidden('Your role is read-only')
-  const body=await readJson<{title?:string;content?:string}>(c,262144)
-  const title=normalize(body.title,160),content=typeof body.content==='string'?body.content:''
+  const body=await readJson<{title?:string;content?:string;folderId?:string|null}>(c,262144)
+  const title=normalize(body.title,160),content=typeof body.content==='string'?body.content:'',folderId=body.folderId||null
   if(!title) throw ApiError.badRequest('Document title is required')
   if(content.length>200000) throw ApiError.badRequest('Document content is too large')
   const workspace=await c.env.DB.prepare(`SELECT id FROM organization_workspaces WHERE id=?1 AND organization_id=?2`).bind(workspaceId,orgId).first()
   if(!workspace) throw ApiError.notFound('Workspace not found')
+  if(folderId&&!await c.env.DB.prepare('SELECT id FROM organization_folders WHERE id=?1 AND organization_id=?2 AND workspace_id=?3').bind(folderId,orgId,workspaceId).first()) throw ApiError.notFound('Folder not found')
   const id=newId(),now=Date.now()
-  await c.env.DB.prepare(`INSERT INTO organization_documents(id,organization_id,workspace_id,title,content,created_by,updated_by,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?6,?6,?7,?7)`).bind(id,orgId,workspaceId,title,content,userId,now).run()
+  await c.env.DB.prepare(`INSERT INTO organization_documents(id,organization_id,workspace_id,title,content,created_by,updated_by,created_at,updated_at,folder_id) VALUES(?1,?2,?3,?4,?5,?6,?6,?7,?7,?8)`).bind(id,orgId,workspaceId,title,content,userId,now,folderId).run()
   return c.json({id,title,content,createdAt:now,updatedAt:now},201)
 })
 

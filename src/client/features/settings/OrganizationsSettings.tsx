@@ -13,8 +13,6 @@ export function OrganizationsSettings() {
   const [workspaceId,setWorkspaceId]=useState('')
   const [docs,setDocs]=useState<Doc[]>([])
   const [docId,setDocId]=useState('')
-  const [title,setTitle]=useState('')
-  const [content,setContent]=useState('')
   const [orgName,setOrgName]=useState('')
   const [workspaceName,setWorkspaceName]=useState('')
   const [invitee,setInvitee]=useState('')
@@ -78,22 +76,15 @@ export function OrganizationsSettings() {
       setNotice('Invitation created. The link was copied when clipboard access was available.')
     })
   }
-  async function openDoc(id:string){
+  function openDoc(id:string){
     if(!orgId||!workspaceId)return
-    await run(async()=>{const d=await api.organizations.getDocument(orgId,workspaceId,id);setDocId(id);setTitle(d.title);setContent(d.content)})
+    window.location.assign('/org-doc/'+orgId+'/'+workspaceId+'/'+id)
   }
   async function createDoc(){
     if(!orgId||!workspaceId)return
-    await run(async()=>{const d=await api.organizations.createDocument(orgId,workspaceId,'Untitled document','');setDocId(d.id);setTitle(d.title);setContent('');await loadDocs(orgId,workspaceId)})
+    await run(async()=>{const d=await api.organizations.createDocument(orgId,workspaceId,'Untitled document','');window.location.assign('/org-doc/'+orgId+'/'+workspaceId+'/'+d.id)})
   }
-  async function saveDoc(){
-    if(!orgId||!workspaceId||!docId)return
-    await run(async()=>{await api.organizations.saveDocument(orgId,workspaceId,docId,title,content);await loadDocs(orgId,workspaceId);setNotice('Shared document saved.')})
-  }
-  async function deleteDoc(){
-    if(!orgId||!workspaceId||!docId||!confirm('Move this shared document to the organization trash?'))return
-    await run(async()=>{await api.organizations.deleteDocument(orgId,workspaceId,docId);setDocId('');setTitle('');setContent('');await loadDocs(orgId,workspaceId)})
-  }
+
 
   const selected=orgs.find(o=>o.id===orgId)
   return <div className="space-y-5 text-[13px] text-[var(--text-primary)]">
@@ -102,7 +93,7 @@ export function OrganizationsSettings() {
     {notice&&<div role="status" className="rounded-md border border-[var(--border-default)] bg-[var(--bg-sunken)] p-3 text-[12px]">{notice}</div>}
     <section className="space-y-2 rounded-lg border border-[var(--border-subtle)] p-3">
       <label className="block text-[12px] font-medium">Your organizations</label>
-      <select value={orgId} onChange={e=>{setOrgId(e.target.value);setWorkspaceId('');setDocId('')}} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2">
+      <select value={orgId} onChange={e=>{setOrgId(e.target.value);setWorkspaceId('')}} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2">
         <option value="">Select organization</option>{orgs.map(o=><option key={o.id} value={o.id}>{o.name} · {o.role}</option>)}
       </select>
       {selected&&<div className="text-[11px] text-[var(--text-tertiary)]">{selected.member_count} members · your role: {role}</div>}
@@ -111,19 +102,14 @@ export function OrganizationsSettings() {
     {selected&&<>
       <section className="space-y-2 rounded-lg border border-[var(--border-subtle)] p-3">
         <div className="font-medium">Workspaces</div>
-        <select value={workspaceId} onChange={e=>{setWorkspaceId(e.target.value);setDocId('')}} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2">
+        <select value={workspaceId} onChange={e=>setWorkspaceId(e.target.value)} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2">
           <option value="">Select workspace</option>{workspaces.map(w=><option key={w.id} value={w.id}>{w.name} · {w.document_count} docs</option>)}
         </select>
         {(role==='owner'||role==='admin')&&<div className="flex gap-2"><input value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="New workspace" className="h-9 min-w-0 flex-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2"/><Button size="sm" disabled={busy||workspaceName.trim().length<2} onClick={()=>void createWorkspace()}>Add</Button></div>}
       </section>
       {workspaceId&&<section className="space-y-3 rounded-lg border border-[var(--border-subtle)] p-3">
         <div className="flex items-center justify-between"><div className="font-medium">Shared documents</div><Button size="sm" disabled={busy||role==='viewer'} onClick={()=>void createDoc()}>New document</Button></div>
-        <div className="grid gap-3 md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)]">
-          <div className="space-y-1">{docs.map(d=><button key={d.id} onClick={()=>void openDoc(d.id)} className={'block w-full rounded-md px-2 py-2 text-left hover:bg-[var(--bg-hover)] '+(docId===d.id?'bg-[var(--accent-soft)]':'')}><span className="block truncate text-[12px] font-medium">{d.title}</span><span className="text-[10px] text-[var(--text-tertiary)]">{new Date(d.updated_at).toLocaleDateString()}</span></button>)}{!docs.length&&<p className="text-[11px] text-[var(--text-tertiary)]">No shared documents yet.</p>}</div>
-          <div className="space-y-2">
-            {docId?<><input value={title} onChange={e=>setTitle(e.target.value)} disabled={role==='viewer'} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2 font-medium"/><textarea value={content} onChange={e=>setContent(e.target.value)} disabled={role==='viewer'} rows={12} placeholder="Write shared Markdown here…" className="w-full resize-y rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] p-2 font-mono text-[12px]"/><div className="flex gap-2">{role!=='viewer'&&<Button size="sm" disabled={busy||!title.trim()} onClick={()=>void saveDoc()}>Save changes</Button>}{(role==='owner'||role==='admin')&&<Button size="sm" variant="danger" disabled={busy} onClick={()=>void deleteDoc()}>Delete</Button>}</div></>:<p className="py-8 text-center text-[11px] text-[var(--text-tertiary)]">Select a document or create one.</p>}
-          </div>
-        </div>
+        <div className="space-y-1">{docs.map(d=><button key={d.id} onClick={()=>openDoc(d.id)} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-3 text-left hover:bg-[var(--bg-hover)]"><span className="min-w-0 truncate text-[13px] font-medium">{d.title}</span><span className="shrink-0 text-[11px] text-[var(--text-tertiary)]">{new Date(d.updated_at).toLocaleDateString()} · Open in editor ↗</span></button>)}{!docs.length&&<p className="text-[11px] text-[var(--text-tertiary)]">No shared documents yet.</p>}</div>
       </section>}
       <section className="space-y-2 rounded-lg border border-[var(--border-subtle)] p-3">
         <div className="font-medium">Members & invitations</div>

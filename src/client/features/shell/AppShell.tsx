@@ -34,6 +34,10 @@ export function AppShell() {
     const role = useSession((s) => s.user?.role);
     const userId = useSession((s) => s.user?.id);
     useEffect(() => scheduleSettingsWarmup(), [userId]);
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('section') === 'organizations' && params.has('invite')) useUi.getState().openPanel('settings');
+    }, []);
     const checkForUpdates = useUpdate((s) => s.check);
     useSyncEngine();
     useGlobalHotkeys();

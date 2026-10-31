@@ -472,6 +472,21 @@ export const api = {
     },
   },
 
+  organizations: {
+    list: () => request<{organizations:Array<{id:string;name:string;slug:string;role:string;member_count:number}>}>('/api/organizations'),
+    create: (name:string) => request<{id:string;name:string;slug:string;role:string}>('/api/organizations',{method:'POST',body:{name}}),
+    members: (id:string) => request<{members:Array<{userId:string;login:string;name:string;role:string;joinedAt:number}>}>(`/api/organizations/${id}/members`),
+    invite: (id:string,invitee:string,role:'admin'|'editor'|'viewer') => request<{id:string;invitee:string;role:string;expiresAt:number;token:string;acceptPath:string}>(`/api/organizations/${id}/invitations`,{method:'POST',body:{invitee,role}}),
+    accept: (token:string) => request<{ok:true;organizationId:string}>('/api/organizations/invitations/accept',{method:'POST',body:{token}}),
+    workspaces: (id:string) => request<{workspaces:Array<{id:string;name:string;document_count:number}>;role:string}>(`/api/organizations/${id}/workspaces`),
+    createWorkspace: (id:string,name:string) => request<{id:string;name:string}>(`/api/organizations/${id}/workspaces`,{method:'POST',body:{name}}),
+    documents: (orgId:string,workspaceId:string) => request<{documents:Array<{id:string;title:string;excerpt:string;updated_at:number}>;role:string}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents`),
+    getDocument: (orgId:string,workspaceId:string,id:string) => request<{id:string;title:string;content:string}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents/${id}`),
+    createDocument: (orgId:string,workspaceId:string,title:string,content:string) => request<{id:string;title:string;content:string}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents`,{method:'POST',body:{title,content}}),
+    saveDocument: (orgId:string,workspaceId:string,id:string,title:string,content:string) => request<{ok:true}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents/${id}`,{method:'PUT',body:{title,content}}),
+    deleteDocument: (orgId:string,workspaceId:string,id:string) => request<{ok:true}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents/${id}`,{method:'DELETE'}),
+  },
+
   update: {
     check: () => request<UpdateCheckResponse>('/api/update', { timeoutMs: 10_000 }),
   },

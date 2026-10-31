@@ -1,6 +1,6 @@
 import { lazy, memo, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BrainCircuit, Cloud, Database, Info, Keyboard, Link2, Palette, RefreshCw, Type, UserRound, X, } from 'lucide-react';
+import { BrainCircuit, Building2, Cloud, Database, Info, Keyboard, Link2, Palette, RefreshCw, Type, UserRound, X, } from 'lucide-react';
 import { ACCENTS } from '@shared/constants';
 import { cn } from '../../lib/cn';
 import { Tooltip, useDialogFocus, useEscape, useLockScroll } from '../../components/overlay';
@@ -28,6 +28,7 @@ export const SECTIONS: {
     { id: 'account', label: () => t("settings.account"), icon: <UserRound size={14}/> },
     { id: 'data', label: () => t("settings.data"), icon: <Database size={14}/> },
     { id: 'shares', label: () => t("share.shared_notes"), icon: <Link2 size={14}/> },
+    { id: 'organizations', label: () => 'Organizations', icon: <Building2 size={14}/> },
     { id: 'about', label: () => t("settings.about"), icon: <Info size={14}/> },
 ];
 export function SettingsPanel({ onClose }: {
@@ -37,8 +38,9 @@ export function SettingsPanel({ onClose }: {
     const storageKey = `${UI_STORAGE_KEY}:settings-section:${userId ?? 'anonymous'}`;
     const [section, setSection] = useState<Section>(() => {
         try {
+            const requested = new URLSearchParams(location.search).get('section');
             const saved = localStorage.getItem(storageKey);
-            return SECTIONS.find((item) => item.id === saved)?.id ?? 'appearance';
+            return SECTIONS.find((item) => item.id === requested)?.id ?? SECTIONS.find((item) => item.id === saved)?.id ?? 'appearance';
         } catch { return 'appearance'; }
     });
     const [visited, setVisited] = useState<Section[]>([section]);

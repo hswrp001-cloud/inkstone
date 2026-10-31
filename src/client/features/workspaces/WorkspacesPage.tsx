@@ -135,6 +135,14 @@ export function WorkspacesPage() {
     })
   }
 
+  async function changeMemberRole(memberId: string, role: 'admin' | 'editor' | 'viewer') {
+    if (!active) return
+    await run(async () => {
+      await callApi(`/api/workspaces/${active.id}/members/${memberId}`, 'PATCH', { role })
+      await refreshWorkspace(active.id, true)
+    })
+  }
+
   async function removeMember(memberId: string) {
     if (!active) return
     await run(async () => {
@@ -209,7 +217,7 @@ export function WorkspacesPage() {
               </div>}
             </footer>
             {inviteUrl && <div className="border-t border-[var(--border-subtle)] px-5 py-2 text-[11px] text-[var(--text-secondary)]">Invite link created and copied: <a href={inviteUrl} className="break-all text-[var(--accent)] underline">{inviteUrl}</a></div>}
-            {canManage && <div className="max-h-32 overflow-y-auto border-t border-[var(--border-subtle)] px-5 py-2"><div className="mb-1 text-[9px] font-semibold uppercase tracking-widest text-[var(--text-quaternary)]">Members</div><div className="flex flex-wrap gap-2">{members.map((m) => <span key={m.userId} className="inline-flex items-center gap-2 rounded-full bg-[var(--bg-sunken)] px-2.5 py-1 text-[10px]">{m.name || m.username} · {m.role}{m.role !== 'owner' && <button onClick={() => void removeMember(m.userId)} title="Remove member" className="text-[var(--danger)]">×</button>}</span>)}</div></div>}
+            {canManage && <div className="max-h-32 overflow-y-auto border-t border-[var(--border-subtle)] px-5 py-2"><div className="mb-1 text-[9px] font-semibold uppercase tracking-widest text-[var(--text-quaternary)]">Members</div><div className="flex flex-wrap gap-2">{members.map((m) => <span key={m.userId} className="inline-flex items-center gap-2 rounded-full bg-[var(--bg-sunken)] px-2.5 py-1 text-[10px]">{m.name || m.username} · {m.role}{active.role === 'owner' && m.role !== 'owner' && <select aria-label={`Role for ${m.username}`} value={m.role} onChange={(e) => void changeMemberRole(m.userId, e.target.value as 'admin' | 'editor' | 'viewer')} className="rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-1 py-0.5"><option value="admin">Admin</option><option value="editor">Editor</option><option value="viewer">Viewer</option></select>}{m.role !== 'owner' && <button onClick={() => void removeMember(m.userId)} title="Remove member" className="text-[var(--danger)]">×</button>}</span>)}</div></div>}
           </>}
           <div className="sr-only" aria-live="polite">{busy ? 'Working' : 'Ready'}</div>
         </main>

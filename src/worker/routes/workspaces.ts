@@ -168,6 +168,25 @@ workspaceRoutes.post('/invites/accept', async (c) => {
   return c.json({ accepted: true, workspaceId: invite.workspace_id })
 })
 
+workspaceRoutes.patch('/:workspaceId/members/:memberId', async (c) => {
+  const id = c.req.param('workspaceId')
+  const actorRole = await requireManager(c, id)
+  if (actorRole !== 'owner') throw ApiError.forbidden('Only the workspace owner can change member roles')
+  const memberId = c.req.param('memberId')
+  const body = await readJson<{ role?: string }>(c, 4096)
+  if (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer') {
+    throw new ApiError(400, 'bad_request', 'Choose admin, editor, or viewer')
+  }
+  const target = await c.env.DB.prepare(
+    'SELECT role FROM workspace_members WHERE workspace_id = ?1 AND user_id = ?2',
+  ).bind(id, memberId).first<{ role: WorkspaceRole }>()
+  if (!target || target.role === 'owner') throw ApiError.notFound('Member not found')
+  await c.env.DB.prepare(
+    'UPDATE workspace_members SET role = ?1 WHERE workspace_id = ?2 AND user_id = ?3',
+  ).bind(body.role, id, memberId).run()
+  return c.json({ updated: true, role: body.role })
+})
+
 workspaceRoutes.delete('/:workspaceId/members/:memberId', async (c) => {
   const id = c.req.param('workspaceId')
   const memberId = c.req.param('memberId')

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../../lib/api'
-import { Button, Input, Select } from '../../../components/primitives'
+import { Button } from '../../../components/primitives'
 
 type Org = { id:string; name:string; slug:string; role:string; member_count:number }
 type Workspace = { id:string; name:string; document_count:number }
@@ -121,7 +121,7 @@ export function OrganizationsSettings() {
         <div className="grid gap-3 md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)]">
           <div className="space-y-1">{docs.map(d=><button key={d.id} onClick={()=>void openDoc(d.id)} className={'block w-full rounded-md px-2 py-2 text-left hover:bg-[var(--bg-hover)] '+(docId===d.id?'bg-[var(--accent-soft)]':'')}><span className="block truncate text-[12px] font-medium">{d.title}</span><span className="text-[10px] text-[var(--text-tertiary)]">{new Date(d.updated_at).toLocaleDateString()}</span></button>)}{!docs.length&&<p className="text-[11px] text-[var(--text-tertiary)]">No shared documents yet.</p>}</div>
           <div className="space-y-2">
-            {docId?<><input value={title} onChange={e=>setTitle(e.target.value)} disabled={role==='viewer'} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2 font-medium"/><textarea value={content} onChange={e=>setContent(e.target.value)} disabled={role==='viewer'} rows={12} placeholder="Write shared Markdown here…" className="w-full resize-y rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] p-2 font-mono text-[12px]"/><div className="flex gap-2">{role!=='viewer'&&<Button size="sm" disabled={busy||!title.trim()} onClick={()=>void saveDoc()}>Save changes</Button>}{(role==='owner'||role==='admin')&&<Button size="sm" color="danger" variant="ghost" disabled={busy} onClick={()=>void deleteDoc()}>Delete</Button>}</div></>:<p className="py-8 text-center text-[11px] text-[var(--text-tertiary)]">Select a document or create one.</p>}
+            {docId?<><input value={title} onChange={e=>setTitle(e.target.value)} disabled={role==='viewer'} className="h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] px-2 font-medium"/><textarea value={content} onChange={e=>setContent(e.target.value)} disabled={role==='viewer'} rows={12} placeholder="Write shared Markdown here…" className="w-full resize-y rounded-md border border-[var(--border-default)] bg-[var(--bg-base)] p-2 font-mono text-[12px]"/><div className="flex gap-2">{role!=='viewer'&&<Button size="sm" disabled={busy||!title.trim()} onClick={()=>void saveDoc()}>Save changes</Button>}{(role==='owner'||role==='admin')&&<Button size="sm" variant="danger" disabled={busy} onClick={()=>void deleteDoc()}>Delete</Button>}</div></>:<p className="py-8 text-center text-[11px] text-[var(--text-tertiary)]">Select a document or create one.</p>}
           </div>
         </div>
       </section>}

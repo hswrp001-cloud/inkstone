@@ -161,7 +161,7 @@ workspaceRoutes.post('/invites/accept', async (c) => {
     `UPDATE workspace_invites SET uses = uses + 1
      WHERE id = ?1 AND revoked_at IS NULL AND expires_at > ?2 AND uses < max_uses`,
   ).bind(invite.id, stamp).run()
-  if (!result.meta.changes) throw new ApiError(410, 'invite_expired', 'Invitation link is no longer available')
+  if (!result.meta.changes) throw new ApiError(409, 'conflict', 'Invitation link is no longer available')
   await c.env.DB.prepare(
     'INSERT INTO workspace_members (workspace_id, user_id, role, joined_at) VALUES (?1, ?2, ?3, ?4)',
   ).bind(invite.workspace_id, userId, invite.role, stamp).run()
@@ -255,7 +255,7 @@ workspaceRoutes.patch('/:workspaceId', async (c) => {
   await requireManager(c, id)
   const body = await readJson<{ name?: string }>(c, 4096)
   const name = cleanName(body.name)
-  if (!name) throw new ApiError(400, 'invalid_workspace_name', 'Enter a workspace name')
+  if (!name) throw new ApiError(400, 'bad_request', 'Enter a workspace name')
   const stamp = now()
   await c.env.DB.prepare('UPDATE workspaces SET name = ?1, updated_at = ?2 WHERE id = ?3')
     .bind(name, stamp, id).run()

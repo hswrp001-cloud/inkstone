@@ -32,7 +32,7 @@ const UpdateDialog = lazy(() => import('../update/UpdateDialog').then((m) => ({ 
 const OrganizationDocumentWorkspace = lazy(() => import('../organizations/OrganizationDocumentWorkspace').then((m) => ({ default: m.OrganizationDocumentWorkspace })));
 export function AppShell() {
     const breakpoint = useBreakpoint();
-    const orgDocumentMatch = /^\\/org-doc\\/([^/]+)\\/([^/]+)\\/([^/]+)\\/?$/.exec(location.pathname);
+    const orgDocumentMatch = /^\/org-doc\/([^/]+)\/([^/]+)\/([^/]+)\/?$/.exec(location.pathname);
     const role = useSession((s) => s.user?.role);
     const userId = useSession((s) => s.user?.id);
     useEffect(() => scheduleSettingsWarmup(), [userId]);

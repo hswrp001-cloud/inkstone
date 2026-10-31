@@ -66,12 +66,12 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     {error && <div role="alert" className="border-b border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-2 text-xs">{error}</div>}
     {role !== 'viewer' && layout !== 'preview' && <EditorToolbar view={view} runCommand={command => { if (view) { command(view); view.focus() } }} onPickImage={() => {}}/>}
     <div className="flex min-h-0 flex-1">
-      {layout !== 'preview' && <div className={`min-h-0 min-w-0 flex-1 overflow-auto ${layout === 'split' ? 'border-r border-[var(--border-subtle)]' : ''}`}>
+      {role !== 'viewer' && layout !== 'preview' && <div className={`min-h-0 min-w-0 flex-1 overflow-auto ${layout === 'split' ? 'border-r border-[var(--border-subtle)]' : ''}`}>
         {role === 'viewer'
           ? <Preview content={content} noteTitle={title} className="h-full"/>
           : <DeferredCodeEditor visible value={content} onChange={value => { setContent(value); setDirty(true) }} settings={settings.editor} sources={sources} handlers={handlers} onReady={setView} placeholder="Write your shared Markdown document…" className="h-full"/>}
       </div>}
-      {layout !== 'edit' && <div className="min-h-0 min-w-0 flex-1 overflow-auto"><Preview content={content} noteTitle={title} className="h-full"/></div>}
+      {(role === 'viewer' || layout !== 'edit') && <div className="min-h-0 min-w-0 flex-1 overflow-auto"><Preview content={content} noteTitle={title} className="h-full"/></div>}
     </div>
     <footer className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--border-subtle)] px-3 text-[10px] text-[var(--text-tertiary)]"><span>Organization shared document</span><span>{content.trim() ? content.trim().split(/\s+/).length : 0} words</span></footer>
   </section>

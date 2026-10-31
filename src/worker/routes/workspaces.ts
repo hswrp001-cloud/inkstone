@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import type { AppBindings } from '../env'
 import { ApiError } from '../lib/errors'
 import { newId } from '../lib/id'
@@ -35,7 +35,7 @@ function canManage(role: WorkspaceRole): boolean {
 function canWrite(role: WorkspaceRole): boolean {
   return role !== 'viewer'
 }
-async function membership(c: Parameters<typeof requireAuth>[0] extends never ? never : any, workspaceId: string) {
+async function membership(c: Context<AppBindings>, workspaceId: string) {
   const userId = c.get('userId') as string
   const row = await c.env.DB.prepare(
     'SELECT role FROM workspace_members WHERE workspace_id = ?1 AND user_id = ?2',
@@ -43,7 +43,7 @@ async function membership(c: Parameters<typeof requireAuth>[0] extends never ? n
   if (!row) throw ApiError.notFound('Workspace not found')
   return row.role
 }
-async function requireManager(c: any, workspaceId: string) {
+async function requireManager(c: Context<AppBindings>, workspaceId: string) {
   const role = await membership(c, workspaceId)
   if (!canManage(role)) throw ApiError.forbidden('Workspace administrator permission required')
   return role
@@ -87,8 +87,8 @@ workspaceRoutes.post('/', async (c) => {
   const body = await readJson<{ name?: string; kind?: string }>(c, 4096)
   const name = cleanName(body.name)
   const kind = body.kind
-  if (!name) throw new ApiError(400, 'invalid_workspace_name', 'Enter a workspace name')
-  if (kind !== 'organization') throw new ApiError(400, 'invalid_workspace_kind', 'Only organization workspaces can be created here')
+  if (!name) throw new ApiError(400, 'bad_request', 'Enter a workspace name')
+  if (kind !== 'organization') throw new ApiError(400, 'bad_request', 'Only organization workspaces can be created here')
   const userId = c.get('userId')
   const stamp = now()
   const id = newId()
@@ -117,10 +117,12 @@ workspaceRoutes.get('/:workspaceId/members', async (c) => {
 workspaceRoutes.post('/:workspaceId/invites', async (c) => {
   const id = c.req.param('workspaceId')
   const actorRole = await requireManager(c, id)
+  const workspace = await c.env.DB.prepare('SELECT kind FROM workspaces WHERE id = ?1').bind(id).first<{ kind: WorkspaceKind }>()
+  if (!workspace || workspace.kind === 'global') throw ApiError.forbidden('Global notes are private and cannot be invited to')
   const body = await readJson<{ role?: string; expiresInDays?: number; maxUses?: number }>(c, 4096)
   const role = body.role
   if (role !== 'admin' && role !== 'editor' && role !== 'viewer') {
-    throw new ApiError(400, 'invalid_invite_role', 'Choose admin, editor, or viewer')
+    throw new ApiError(400, 'bad_request', 'Choose admin, editor, or viewer')
   }
   if (actorRole !== 'owner' && role === 'admin') {
     throw ApiError.forbidden('Only the workspace owner can invite administrators')
@@ -140,7 +142,7 @@ workspaceRoutes.post('/:workspaceId/invites', async (c) => {
 workspaceRoutes.post('/invites/accept', async (c) => {
   const body = await readJson<{ token?: string }>(c, 4096)
   const token = typeof body.token === 'string' ? body.token.trim() : ''
-  if (!/^[a-f0-9]{64}$/.test(token)) throw new ApiError(400, 'invalid_invite', 'Invitation link is invalid or expired')
+  if (!/^[a-f0-9]{64}$/.test(token)) throw new ApiError(400, 'bad_request', 'Invitation link is invalid or expired')
   const hash = await tokenHash(token)
   const stamp = now()
   const invite = await c.env.DB.prepare(
@@ -148,7 +150,7 @@ workspaceRoutes.post('/invites/accept', async (c) => {
      FROM workspace_invites WHERE token_hash = ?1 AND revoked_at IS NULL`,
   ).bind(hash).first<{ id: string; workspace_id: string; role: WorkspaceRole; expires_at: number; max_uses: number; uses: number }>()
   if (!invite || invite.expires_at <= stamp || invite.uses >= invite.max_uses) {
-    throw new ApiError(410, 'invite_expired', 'Invitation link is invalid, expired, or already used')
+    throw new ApiError(409, 'conflict', 'Invitation link is invalid, expired, or already used')
   }
   const userId = c.get('userId')
   const exists = await c.env.DB.prepare(
@@ -224,17 +226,17 @@ workspaceRoutes.patch('/:workspaceId/notes/:noteId', async (c) => {
   const role = await membership(c, id)
   if (!canWrite(role)) throw ApiError.forbidden('This workspace is read-only for your account')
   const body = await readJson<{ title?: string; content?: string; revision?: number }>(c, 256 * 1024)
-  if (!Number.isInteger(body.revision) || body.revision! < 1) throw new ApiError(400, 'invalid_revision', 'A note revision is required')
+  if (!Number.isInteger(body.revision) || body.revision! < 1) throw new ApiError(400, 'bad_request', 'A note revision is required')
   const title = body.title === undefined ? undefined : cleanName(body.title)
   const content = body.content === undefined ? undefined : typeof body.content === 'string' ? body.content.slice(0, 200_000) : ''
-  if (title === undefined && content === undefined) throw new ApiError(400, 'empty_update', 'No note changes were provided')
+  if (title === undefined && content === undefined) throw new ApiError(400, 'bad_request', 'No note changes were provided')
   const stamp = now()
   const result = await c.env.DB.prepare(
     `UPDATE workspace_notes SET title = COALESCE(?1, title), content = COALESCE(?2, content),
       revision = revision + 1, updated_at = ?3
      WHERE id = ?4 AND workspace_id = ?5 AND deleted_at IS NULL AND revision = ?6`,
   ).bind(title ?? null, content ?? null, stamp, c.req.param('noteId'), id, body.revision).run()
-  if (!result.meta.changes) throw new ApiError(409, 'workspace_note_conflict', 'This note changed elsewhere. Reload it before saving')
+  if (!result.meta.changes) throw new ApiError(409, 'conflict', 'This note changed elsewhere. Reload it before saving')
   return c.json({ saved: true, revision: body.revision! + 1, updatedAt: stamp })
 })
 

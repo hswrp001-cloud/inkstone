@@ -38,8 +38,9 @@ export function SettingsPanel({ onClose }: {
     const storageKey = `${UI_STORAGE_KEY}:settings-section:${userId ?? 'anonymous'}`;
     const [section, setSection] = useState<Section>(() => {
         try {
+            const requested = new URLSearchParams(location.search).get('section');
             const saved = localStorage.getItem(storageKey);
-            return SECTIONS.find((item) => item.id === saved)?.id ?? 'appearance';
+            return SECTIONS.find((item) => item.id === requested)?.id ?? SECTIONS.find((item) => item.id === saved)?.id ?? 'appearance';
         } catch { return 'appearance'; }
     });
     const [visited, setVisited] = useState<Section[]>([section]);

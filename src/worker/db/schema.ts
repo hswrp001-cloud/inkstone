@@ -537,6 +537,55 @@ const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
     version: 13,
     statements: [BACKUP_ARCHIVES_TABLE, BACKUP_ARCHIVES_INDEX],
   },
+  {
+    version: 14,
+    statements: [
+      `CREATE TABLE IF NOT EXISTS workspaces (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('global', 'development', 'organization')),
+        owner_id TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS workspace_members (
+        workspace_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'editor', 'viewer')),
+        joined_at INTEGER NOT NULL,
+        PRIMARY KEY (workspace_id, user_id)
+      )`,
+      `CREATE TABLE IF NOT EXISTS workspace_notes (
+        id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        content TEXT NOT NULL DEFAULT '',
+        revision INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_workspace_notes_updated
+        ON workspace_notes(workspace_id, deleted_at, updated_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_workspace_members_user
+        ON workspace_members(user_id, workspace_id)`,
+      `CREATE TABLE IF NOT EXISTS workspace_invites (
+        id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        role TEXT NOT NULL CHECK (role IN ('admin', 'editor', 'viewer')),
+        created_by TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        max_uses INTEGER NOT NULL DEFAULT 1,
+        uses INTEGER NOT NULL DEFAULT 0,
+        revoked_at INTEGER,
+        created_at INTEGER NOT NULL
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_workspace_invites_workspace
+        ON workspace_invites(workspace_id, revoked_at, expires_at)`,
+    ],
+  },
 ]
 
 const FTS_STATEMENT = `CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(

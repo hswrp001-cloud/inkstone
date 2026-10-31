@@ -15,6 +15,8 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
   const [loaded, setLoaded] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [lastSaved, setLastSaved] = useState<number | null>(null)
+  const [saveMode, setSaveMode] = useState<'manual'|'auto'>('auto')
   const [error, setError] = useState('')
   const [view, setView] = useState<EditorView|null>(null)
   const [layout, setLayout] = useState<'edit'|'split'|'preview'>('split')
@@ -36,6 +38,35 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     return () => { active = false }
   }, [organizationId, workspaceId, documentId])
 
+  useEffect(() => {
+    if (!loaded || !dirty || role === 'viewer' || !title.trim() || busy || saveMode !== 'auto') return
+    const timer = window.setTimeout(async () => {
+      setBusy(true)
+      setError('')
+      try {
+        await api.organizations.saveDocument(organizationId, workspaceId, documentId, title, content)
+        setDirty(false)
+        setLastSaved(Date.now())
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error))
+      } finally {
+        setBusy(false)
+      }
+    }, 1100)
+    return () => window.clearTimeout(timer)
+  }, [loaded, dirty, role, title, content, busy, saveMode, organizationId, workspaceId, documentId])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        void save()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   async function save() {
     if (role === 'viewer' || !title.trim() || busy) return
     setBusy(true)
@@ -43,6 +74,7 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     try {
       await api.organizations.saveDocument(organizationId, workspaceId, documentId, title, content)
       setDirty(false)
+      setLastSaved(Date.now())
     } catch (error) {
       setError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -55,12 +87,12 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4">
       <button type="button" onClick={() => { location.href = '/' }} className="shrink-0 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">← Back to files</button>
       <input aria-label="Document title" className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none" value={title} disabled={role === 'viewer'} onChange={e => { setTitle(e.target.value); setDirty(true) }}/>
-      <span className="hidden text-[11px] text-[var(--text-tertiary)] sm:block">{dirty ? 'Unsaved changes' : 'Saved'} · {role}</span>
+      <span className="hidden text-[11px] text-[var(--text-tertiary)] sm:block">{busy ? 'Saving…' : dirty ? 'Changes pending' : lastSaved ? 'Saved just now' : 'Saved'} · {role}</span>
       <div className="flex items-center gap-1">
         <Button size="sm" variant={layout === 'edit' ? 'primary' : 'secondary'} onClick={() => setLayout('edit')}>Edit</Button>
         <Button size="sm" variant={layout === 'split' ? 'primary' : 'secondary'} onClick={() => setLayout('split')}>Split</Button>
         <Button size="sm" variant={layout === 'preview' ? 'primary' : 'secondary'} onClick={() => setLayout('preview')}>Preview</Button>
-        {role !== 'viewer' && <Button size="sm" disabled={!dirty || busy || !title.trim()} onClick={() => void save()}>{busy ? 'Saving…' : 'Save'}</Button>}
+        {role !== 'viewer' && <><Button size="sm" variant="secondary" onClick={() => setSaveMode(mode => mode === 'auto' ? 'manual' : 'auto')}>{saveMode === 'auto' ? 'Auto-save on' : 'Auto-save off'}</Button><Button size="sm" disabled={!dirty || busy || !title.trim()} onClick={() => void save()}>{busy ? 'Saving…' : 'Save'}</Button></>}
       </div>
     </header>
     {error && <div role="alert" className="border-b border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-2 text-xs">{error}</div>}
@@ -73,6 +105,6 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
       </div>}
       {(role === 'viewer' || layout !== 'edit') && <div className="min-h-0 min-w-0 flex-1 overflow-auto"><Preview content={content} noteTitle={title} className="h-full"/></div>}
     </div>
-    <footer className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--border-subtle)] px-3 text-[10px] text-[var(--text-tertiary)]"><span>Organization shared document</span><span>{content.trim() ? content.trim().split(/\s+/).length : 0} words</span></footer>
+    <footer className="flex h-7 shrink-0 items-center justify-between border-t border-[var(--border-subtle)] px-3 text-[10px] text-[var(--text-tertiary)]"><span>Organization document · {saveMode === 'auto' ? 'Auto-save enabled' : 'Manual save'} · Ctrl/⌘ + S to save</span><span>{content.trim() ? content.trim().split(/\s+/).length : 0} words</span></footer>
   </section>
 }

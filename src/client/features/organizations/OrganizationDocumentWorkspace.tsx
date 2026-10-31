@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorView } from '@codemirror/view'
+import { Copy, Trash2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { DeferredCodeEditor } from '../../editor/CodeEditor'
 import { Preview } from '../preview/Preview'
@@ -17,6 +18,7 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
   const [busy, setBusy] = useState(false)
   const [lastSaved, setLastSaved] = useState<number | null>(null)
   const [saveMode, setSaveMode] = useState<'manual'|'auto'>('auto')
+  const [actionBusy, setActionBusy] = useState(false)
   const currentDraft = useRef({ title, content })
   currentDraft.current = { title, content }
   const [error, setError] = useState('')
@@ -86,6 +88,31 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     }
   }
 
+  async function duplicateDocument() {
+    if (role === 'viewer' || actionBusy) return
+    setActionBusy(true)
+    try {
+      const copy = await api.organizations.createDocument(organizationId, workspaceId, title.trim() + ' (copy)', content)
+      location.href = '/org-doc/' + organizationId + '/' + workspaceId + '/' + copy.id
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error))
+      setActionBusy(false)
+    }
+  }
+
+  async function deleteDocument() {
+    if (role !== 'owner' && role !== 'admin') return
+    if (!window.confirm('Move this shared document to the organization trash?')) return
+    setActionBusy(true)
+    try {
+      await api.organizations.deleteDocument(organizationId, workspaceId, documentId)
+      location.href = '/'
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error))
+      setActionBusy(false)
+    }
+  }
+
   if (!loaded) return <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-[var(--bg-editor)] text-sm text-[var(--text-secondary)]">{error || 'Loading shared document…'}</div>
   return <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-editor)]">
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4">
@@ -96,7 +123,7 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
         <Button size="sm" variant={layout === 'edit' ? 'primary' : 'secondary'} onClick={() => setLayout('edit')}>Edit</Button>
         <Button size="sm" variant={layout === 'split' ? 'primary' : 'secondary'} onClick={() => setLayout('split')}>Split</Button>
         <Button size="sm" variant={layout === 'preview' ? 'primary' : 'secondary'} onClick={() => setLayout('preview')}>Preview</Button>
-        {role !== 'viewer' && <><Button size="sm" variant="secondary" onClick={() => setSaveMode(mode => mode === 'auto' ? 'manual' : 'auto')}>{saveMode === 'auto' ? 'Auto-save on' : 'Auto-save off'}</Button><Button size="sm" disabled={!dirty || busy || !title.trim()} onClick={() => void save()}>{busy ? 'Saving…' : 'Save'}</Button></>}
+        {role !== 'viewer' && <><Button size="sm" variant="secondary" disabled={actionBusy || dirty} onClick={() => void duplicateDocument()}><Copy size={13}/> Duplicate</Button><Button size="sm" variant="secondary" onClick={() => setSaveMode(mode => mode === 'auto' ? 'manual' : 'auto')}>{saveMode === 'auto' ? 'Auto-save on' : 'Auto-save off'}</Button><Button size="sm" disabled={!dirty || busy || !title.trim()} onClick={() => void save()}>{busy ? 'Saving…' : 'Save'}</Button></>}{(role === 'owner' || role === 'admin') && <Button size="sm" variant="secondary" disabled={actionBusy} onClick={() => void deleteDocument()}><Trash2 size={13}/> Delete</Button>}
       </div>
     </header>
     {error && <div role="alert" className="border-b border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-2 text-xs">{error}</div>}

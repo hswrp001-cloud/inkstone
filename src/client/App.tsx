@@ -12,6 +12,7 @@ import { useSession, watchSystemTheme } from './store/session'
 const AppShell = lazy(() =>
   import('./features/shell/AppShell').then((module) => ({ default: module.AppShell })),
 )
+const WorkspacesPage = lazy(() => import('./features/workspaces/WorkspacesPage').then((module) => ({ default: module.WorkspacesPage })))
 const SharePage = lazy(() =>
   import('./features/share/SharePage').then((module) => ({ default: module.SharePage })),
 )
@@ -21,6 +22,7 @@ export function App() {
   useLocale()
   const status = useSession((s) => s.status)
   const load = useSession((s) => s.load)
+  const [workspacesRoute] = useState(() => location.pathname.replace(/\\/$/, '') === '/workspaces')
   const [shareSlug] = useState(() => {
     const match = /^\/s\/([A-Za-z0-9_-]+)/.exec(location.pathname)
     return match?.[1] ?? null

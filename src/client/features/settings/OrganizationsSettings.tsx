@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api } from '../../../lib/api'
-import { Button } from '../../../components/primitives'
+import { api } from '../../lib/api'
+import { Button } from '../../components/primitives'
 
 type Org = { id:string; name:string; slug:string; role:string; member_count:number }
 type Workspace = { id:string; name:string; document_count:number }

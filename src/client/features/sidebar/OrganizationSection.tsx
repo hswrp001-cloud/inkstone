@@ -37,7 +37,7 @@ function FolderBranch({orgId,workspaceId,folder,role,depth=0}:{orgId:string;work
   async function addDocument() {
     const title=prompt('Document name','Untitled document')
     if(!title?.trim())return
-    try{const doc=await api.organizations.createDocument(orgId,workspaceId,title.trim(),' ',folder.id);openDocument(orgId,workspaceId,doc.id)}catch(e){setError(e instanceof Error?e.message:'Could not create document')}
+    try{const doc=await api.organizations.createDocument(orgId,workspaceId,title.trim(),'',folder.id);openDocument(orgId,workspaceId,doc.id)}catch(e){setError(e instanceof Error?e.message:'Could not create document')}
   }
   async function rename() {
     const name=prompt('Rename folder',folder.name)

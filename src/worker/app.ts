@@ -16,6 +16,7 @@ import { settingsRoutes } from './routes/settings'
 import { shareManageRoutes, sharePageRoutes, shareRoutes } from './routes/share'
 import { transferRoutes } from './routes/transfer'
 import { updateRoutes } from './routes/update'
+import { workspaceRoutes } from './routes/workspaces'
 import { mcpAuthorizeRoutes } from './routes/mcp-authorize'
 import { mcpSettingsRoutes } from './routes/mcp-settings'
 import type { AppBindings } from './env'
@@ -87,6 +88,7 @@ export function createApp() {
   app.route('/api/auth/totp', totpRoutes)
   app.route('/api/auth', authRoutes)
   app.route('/api/notes', notesRoutes)
+  app.route('/api/workspaces', workspaceRoutes)
   app.route('/api/folders', foldersRoutes)
   app.route('/api/tags', tagsRoutes)
   app.route('/api', searchRoutes)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorView } from '@codemirror/view'
 import { api } from '../../lib/api'
 import { DeferredCodeEditor } from '../../editor/CodeEditor'
@@ -17,6 +17,8 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
   const [busy, setBusy] = useState(false)
   const [lastSaved, setLastSaved] = useState<number | null>(null)
   const [saveMode, setSaveMode] = useState<'manual'|'auto'>('auto')
+  const currentDraft = useRef({ title, content })
+  currentDraft.current = { title, content }
   const [error, setError] = useState('')
   const [view, setView] = useState<EditorView|null>(null)
   const [layout, setLayout] = useState<'edit'|'split'|'preview'>('split')
@@ -41,11 +43,12 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
   useEffect(() => {
     if (!loaded || !dirty || role === 'viewer' || !title.trim() || busy || saveMode !== 'auto') return
     const timer = window.setTimeout(async () => {
+      const snapshot = { title, content }
       setBusy(true)
       setError('')
       try {
-        await api.organizations.saveDocument(organizationId, workspaceId, documentId, title, content)
-        setDirty(false)
+        await api.organizations.saveDocument(organizationId, workspaceId, documentId, snapshot.title, snapshot.content)
+        if (currentDraft.current.title === snapshot.title && currentDraft.current.content === snapshot.content) setDirty(false)
         setLastSaved(Date.now())
       } catch (error) {
         setError(error instanceof Error ? error.message : String(error))
@@ -72,8 +75,9 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
     setBusy(true)
     setError('')
     try {
-      await api.organizations.saveDocument(organizationId, workspaceId, documentId, title, content)
-      setDirty(false)
+      const snapshot = { title, content }
+      await api.organizations.saveDocument(organizationId, workspaceId, documentId, snapshot.title, snapshot.content)
+      if (currentDraft.current.title === snapshot.title && currentDraft.current.content === snapshot.content) setDirty(false)
       setLastSaved(Date.now())
     } catch (error) {
       setError(error instanceof Error ? error.message : String(error))

@@ -67,9 +67,10 @@ organizationRoutes.post('/invitations/accept',async c=>{
   const body=await readJson<{token?:string}>(c,4096)
   const raw=normalize(body.token,160)
   if(raw.length<30) throw ApiError.badRequest('Invalid invitation token')
-  const invite=await c.env.DB.prepare(`SELECT id,organization_id,role,expires_at,accepted_at FROM organization_invitations WHERE token_hash=?1`)
-    .bind(await digest(raw)).first<{id:string;organization_id:string;role:string;expires_at:number;accepted_at:number|null}>()
+  const invite=await c.env.DB.prepare(`SELECT id,organization_id,invitee,role,expires_at,accepted_at FROM organization_invitations WHERE token_hash=?1`)
+    .bind(await digest(raw)).first<{id:string;organization_id:string;invitee:string;role:string;expires_at:number;accepted_at:number|null}>()
   if(!invite||invite.accepted_at||invite.expires_at<Date.now()) throw ApiError.notFound('Invitation is invalid or expired')
+  if(invite.invitee.toLowerCase()!==c.get('user').login.toLowerCase()) throw ApiError.forbidden('This invitation was issued to a different account')
   const userId=c.get('userId'), now=Date.now()
   await c.env.DB.batch([
     c.env.DB.prepare(`INSERT OR IGNORE INTO organization_members(organization_id,user_id,role,joined_at) VALUES(?1,?2,?3,?4)`).bind(invite.organization_id,userId,invite.role,now),

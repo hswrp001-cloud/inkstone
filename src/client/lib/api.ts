@@ -487,7 +487,7 @@ export const api = {
     moveFolder: (orgId:string,workspaceId:string,folderId:string,parentId:string|null) => request<{ok:true}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/folders/${folderId}`,{method:'PATCH',body:{parentId}}),
     deleteFolder: (orgId:string,workspaceId:string,folderId:string) => request<{ok:true}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/folders/${folderId}`,{method:'DELETE'}),
     getDocument: (orgId:string,workspaceId:string,id:string) => request<{id:string;title:string;content:string}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents/${id}`),
-    createDocument: (orgId:string,workspaceId:string,title:string,content:string) => request<{id:string;title:string;content:string}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents`,{method:'POST',body:{title,content}}),
+    createDocument: (orgId:string,workspaceId:string,title:string,content:string,folderId?:string|null) => request<{id:string;title:string;content:string}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents`,{method:'POST',body:{title,content,folderId}}),
     saveDocument: (orgId:string,workspaceId:string,id:string,title:string,content:string) => request<{ok:true}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents/${id}`,{method:'PUT',body:{title,content}}),
     deleteDocument: (orgId:string,workspaceId:string,id:string) => request<{ok:true}>(`/api/organizations/${orgId}/workspaces/${workspaceId}/documents/${id}`,{method:'DELETE'}),
   },

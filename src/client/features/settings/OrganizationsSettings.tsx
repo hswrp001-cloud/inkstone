@@ -12,7 +12,6 @@ export function OrganizationsSettings() {
   const [workspaces,setWorkspaces]=useState<Workspace[]>([])
   const [workspaceId,setWorkspaceId]=useState('')
   const [docs,setDocs]=useState<Doc[]>([])
-  const [docId,setDocId]=useState('')
   const [orgName,setOrgName]=useState('')
   const [workspaceName,setWorkspaceName]=useState('')
   const [invitee,setInvitee]=useState('')

@@ -53,7 +53,7 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
   if (!loaded) return <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-[var(--bg-editor)] text-sm text-[var(--text-secondary)]">{error || 'Loading shared document…'}</div>
   return <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-editor)]">
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4">
-      <button type="button" onClick={() => { location.href = '/?section=organizations' }} className="shrink-0 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">← Organizations</button>
+      <button type="button" onClick={() => { location.href = '/' }} className="shrink-0 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">← Back to files</button>
       <input aria-label="Document title" className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none" value={title} disabled={role === 'viewer'} onChange={e => { setTitle(e.target.value); setDirty(true) }}/>
       <span className="hidden text-[11px] text-[var(--text-tertiary)] sm:block">{dirty ? 'Unsaved changes' : 'Saved'} · {role}</span>
       <div className="flex items-center gap-1">

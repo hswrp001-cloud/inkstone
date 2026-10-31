@@ -17,10 +17,18 @@ async function ensureSchema(db: D1Database): Promise<void> {
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_org_members_user ON organization_members(user_id,organization_id)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_org_invites_org ON organization_invitations(organization_id,created_at DESC)`),
     db.prepare(`CREATE TABLE IF NOT EXISTS organization_workspaces (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, name TEXT NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL)`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS organization_documents (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, workspace_id TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, deleted_at INTEGER)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS organization_documents (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, workspace_id TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, deleted_at INTEGER, folder_id TEXT)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS organization_folders (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, workspace_id TEXT NOT NULL, parent_id TEXT, name TEXT NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_org_docs_workspace ON organization_documents(organization_id,workspace_id,deleted_at,updated_at DESC)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_org_folders_parent ON organization_folders(organization_id,workspace_id,parent_id,name)`),
   ]).then(()=>undefined)
-  try { await schemaReady } catch (error) { schemaReady = null; throw error }
+  try {
+    await schemaReady
+    const columns = await db.prepare('PRAGMA table_info(organization_documents)').all<{name:string}>()
+    if (!columns.results.some(column => column.name === 'folder_id')) {
+      await db.prepare('ALTER TABLE organization_documents ADD COLUMN folder_id TEXT').run()
+    }
+  } catch (error) { schemaReady = null; throw error }
 }
 
 const roles = new Set(['admin','editor','viewer'])

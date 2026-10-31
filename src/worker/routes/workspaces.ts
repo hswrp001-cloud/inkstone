@@ -66,7 +66,7 @@ workspaceRoutes.get('/', async (c) => {
        SELECT ?1, ?2, ?3, ?4, ?5, ?5
        WHERE NOT EXISTS (
          SELECT 1 FROM workspaces w JOIN workspace_members m ON m.workspace_id = w.id
-         WHERE w.kind = ?3 AND m.user_id = ?4
+         WHERE w.kind = ?3 AND w.owner_id = ?4 AND m.user_id = ?4
        )`,
     ).bind(id, name, kind, userId, stamp).run()
     await db.prepare(

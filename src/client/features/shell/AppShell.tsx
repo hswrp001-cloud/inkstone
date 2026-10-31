@@ -29,8 +29,10 @@ const SharePanel = lazy(() => import('../share/SharePanel').then((m) => ({ defau
 const VersionsPanel = lazy(() => import('../workspace/VersionsPanel').then((m) => ({ default: m.VersionsPanel })));
 const Lightbox = lazy(() => import('../preview/Lightbox').then((m) => ({ default: m.Lightbox })));
 const UpdateDialog = lazy(() => import('../update/UpdateDialog').then((m) => ({ default: m.UpdateDialog })));
+const OrganizationDocumentWorkspace = lazy(() => import('../organizations/OrganizationDocumentWorkspace').then((m) => ({ default: m.OrganizationDocumentWorkspace })));
 export function AppShell() {
     const breakpoint = useBreakpoint();
+    const orgDocumentMatch = /^\\/org-doc\\/([^/]+)\\/([^/]+)\\/([^/]+)\\/?$/.exec(location.pathname);
     const role = useSession((s) => s.user?.role);
     const userId = useSession((s) => s.user?.id);
     useEffect(() => scheduleSettingsWarmup(), [userId]);
@@ -87,8 +89,9 @@ export function AppShell() {
     const showList = !listCollapsed && !isMobile;
     const showWorkspaceSplit = breakpoint === 'desktop' && Boolean(workspaceSecondaryNoteId);
     const effectiveWorkspaceSplitRatio = workspaceSplitRatio ?? 0.5;
-    if (isMobile)
+    if (isMobile && !orgDocumentMatch)
         return <MobileShell />;
+    if (isMobile && orgDocumentMatch) return <Suspense fallback={<WorkspaceFallback />}><OrganizationDocumentWorkspace organizationId={orgDocumentMatch[1]!} workspaceId={orgDocumentMatch[2]!} documentId={orgDocumentMatch[3]!}/></Suspense>;
     return (<div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg-base)]">
       {isTablet && (<div className="flex h-11 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3">
         <IconButton label={t('common.navigation')} onClick={() => toggleNavDrawer(true)}><PanelLeft size={16}/></IconButton>
@@ -111,6 +114,7 @@ export function AppShell() {
 
         <main ref={workspaceGroupsRef} className="flex min-w-0 flex-1">
           <Suspense fallback={<WorkspaceFallback />}>
+            {orgDocumentMatch ? <OrganizationDocumentWorkspace organizationId={orgDocumentMatch[1]!} workspaceId={orgDocumentMatch[2]!} documentId={orgDocumentMatch[3]!}/> :
             {showWorkspaceSplit ? (<>
               <div className="min-w-0" style={{ width: `${effectiveWorkspaceSplitRatio * 100}%` }}>
                 <InlineErrorBoundary><Workspace pane="primary" grouped/></InlineErrorBoundary>
@@ -122,6 +126,7 @@ export function AppShell() {
             </>) : (<div className="min-w-0 flex-1">
                 <InlineErrorBoundary><Workspace /></InlineErrorBoundary>
               </div>)}
+            }
           </Suspense>
         </main>
       </div>

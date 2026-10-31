@@ -1,6 +1,6 @@
 import { APP_SHORTCUTS } from '../../lib/shortcuts';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, ArrowDown, ArrowUp, ChevronRight, Clock, CornerUpLeft, FilePlus2, FileText, FolderClosed, FolderInput, FolderOpen, FolderPlus, Hash, Inbox, LogOut, Moon, MoreHorizontal, Palette, PanelLeft, PanelLeftClose, Pencil, Plus, Settings, Star, Sun, Trash2, Waypoints, } from 'lucide-react';
+import { Archive, ArrowDown, ArrowUp, ChevronRight, Clock, CornerUpLeft, FilePlus2, FileText, FolderClosed, FolderInput, FolderOpen, FolderPlus, FolderKanban, Hash, Inbox, LogOut, Moon, MoreHorizontal, Palette, PanelLeft, PanelLeftClose, Pencil, Plus, Settings, Star, Sun, Trash2, Waypoints, } from 'lucide-react';
 import { LIMITS } from '@shared/constants';
 import type { NoteSummary, Tag, ViewKind } from '@shared/types';
 import { compareTagNames } from '@shared/markdown-utils';
@@ -43,6 +43,12 @@ export function Sidebar({ collapsed = false, onCollapse, }: {
       </header>
 
       <div className="shrink-0 px-2 pt-2"><SearchButton /></div>
+      <div className="shrink-0 px-2 pt-1">
+        <a href="/workspaces" className="flex h-9 items-center gap-2.5 rounded-[var(--r-md)] px-2 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]">
+          <FolderKanban size={14} className="text-[var(--text-tertiary)]"/>
+          <span>Workspaces</span>
+        </a>
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-2 pb-4">
         <div className="space-y-px">
@@ -83,6 +89,7 @@ function SidebarRail({ onExpand }: {
 
       <div className="flex w-full flex-col items-center gap-1 py-2">
         <SearchButton variant="icon" />
+        <Tooltip label="Workspaces" side="right"><a href="/workspaces" aria-label="Workspaces" className="flex size-8 items-center justify-center rounded-[var(--r-md)] text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"><FolderKanban size={16}/></a></Tooltip>
         <RailButton label={t("navigation.all_notes")} active={view === 'all'} icon={<FileText size={16}/>} onClick={() => openView('all')}/>
         <RailButton label={t("navigation.favorites")} active={view === 'starred'} icon={<Star size={16}/>} onClick={() => openView('starred')}/>
         <RailButton label={t("navigation.trash")} active={view === 'trash'} icon={<Trash2 size={16}/>} onClick={() => openView('trash')}/>

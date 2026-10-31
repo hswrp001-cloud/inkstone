@@ -16,6 +16,7 @@ import { settingsRoutes } from './routes/settings'
 import { shareManageRoutes, sharePageRoutes, shareRoutes } from './routes/share'
 import { transferRoutes } from './routes/transfer'
 import { updateRoutes } from './routes/update'
+import { organizationRoutes } from './routes/organizations'
 import { mcpAuthorizeRoutes } from './routes/mcp-authorize'
 import { mcpSettingsRoutes } from './routes/mcp-settings'
 import type { AppBindings } from './env'
@@ -96,6 +97,7 @@ export function createApp() {
   app.route('/api/backup', backupRoutes)
   app.route('/api/settings', settingsRoutes)
   app.route('/api/update', updateRoutes)
+  app.route('/api/organizations', organizationRoutes)
   app.route('/api/mcp', mcpSettingsRoutes)
   app.route('/api/share', shareManageRoutes)
   app.route('/api/public', shareRoutes)

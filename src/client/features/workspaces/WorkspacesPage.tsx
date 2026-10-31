@@ -47,7 +47,7 @@ export function WorkspacesPage() {
     setActiveId((current) => result.workspaces.some((w) => w.id === current) ? current : result.workspaces[0]?.id ?? '')
   }, [])
 
-  const refreshWorkspace = useCallback(async (id: string) => {
+  const refreshWorkspace = useCallback(async (id: string, keepSelection = false) => {
     if (!id) return
     const [noteResult, memberResult] = await Promise.all([
       callApi<{ notes: NoteSummary[] }>(`/api/workspaces/${id}/notes`),
@@ -55,9 +55,11 @@ export function WorkspacesPage() {
     ])
     setNotes(noteResult.notes)
     setMembers(memberResult.members)
-    setActiveNote(null)
-    setTitle('')
-    setContent('')
+    if (!keepSelection) {
+      setActiveNote(null)
+      setTitle('')
+      setContent('')
+    }
     setInviteUrl('')
   }, [])
 
@@ -118,7 +120,7 @@ export function WorkspacesPage() {
         title, content, revision: activeNote.revision,
       })
       setActiveNote({ ...activeNote, title, content, revision: result.revision })
-      await refreshWorkspace(active.id)
+      await refreshWorkspace(active.id, true)
     })
   }
 

@@ -120,6 +120,69 @@ organizationRoutes.post('/:orgId/workspaces',async c=>{
   return c.json({id,name,createdAt:now},201)
 })
 
+
+organizationRoutes.get('/:orgId/workspaces/:workspaceId/tree',async c=>{
+  const userId=c.get('userId'),orgId=c.req.param('orgId'),workspaceId=c.req.param('workspaceId')
+  const member=await membership(c.env.DB,orgId,userId)
+  if(!member) throw ApiError.forbidden('You are not a member of this organization')
+  const workspace=await c.env.DB.prepare('SELECT id FROM organization_workspaces WHERE id=?1 AND organization_id=?2').bind(workspaceId,orgId).first()
+  if(!workspace) throw ApiError.notFound('Workspace not found')
+  const parentId=c.req.query('parentId')||null
+  if(parentId&&!await c.env.DB.prepare('SELECT id FROM organization_folders WHERE id=?1 AND organization_id=?2 AND workspace_id=?3').bind(parentId,orgId,workspaceId).first()) throw ApiError.notFound('Folder not found')
+  const [folders,documents]=await Promise.all([
+    c.env.DB.prepare('SELECT id,name,parent_id parentId,created_at createdAt,updated_at updatedAt FROM organization_folders WHERE organization_id=?1 AND workspace_id=?2 AND parent_id IS ?3 ORDER BY name COLLATE NOCASE').bind(orgId,workspaceId,parentId).all(),
+    c.env.DB.prepare('SELECT id,title,substr(content,1,240) excerpt,updated_at updatedAt,folder_id folderId FROM organization_documents WHERE organization_id=?1 AND workspace_id=?2 AND folder_id IS ?3 AND deleted_at IS NULL ORDER BY title COLLATE NOCASE').bind(orgId,workspaceId,parentId).all()
+  ])
+  return c.json({folders:folders.results,documents:documents.results,role:member.role})
+})
+
+organizationRoutes.post('/:orgId/workspaces/:workspaceId/folders',async c=>{
+  const userId=c.get('userId'),orgId=c.req.param('orgId'),workspaceId=c.req.param('workspaceId')
+  const member=await membership(c.env.DB,orgId,userId)
+  if(!member||!canWrite(member.role)) throw ApiError.forbidden('Your role is read-only')
+  const body=await readJson<{name?:string;parentId?:string|null}>(c,4096),name=normalize(body.name,80),parentId=body.parentId||null
+  if(!name) throw ApiError.badRequest('Folder name is required')
+  if(!await c.env.DB.prepare('SELECT id FROM organization_workspaces WHERE id=?1 AND organization_id=?2').bind(workspaceId,orgId).first()) throw ApiError.notFound('Workspace not found')
+  if(parentId&&!await c.env.DB.prepare('SELECT id FROM organization_folders WHERE id=?1 AND organization_id=?2 AND workspace_id=?3').bind(parentId,orgId,workspaceId).first()) throw ApiError.notFound('Parent folder not found')
+  const id=newId(),now=Date.now()
+  await c.env.DB.prepare('INSERT INTO organization_folders(id,organization_id,workspace_id,parent_id,name,created_by,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?7)').bind(id,orgId,workspaceId,parentId,name,userId,now).run()
+  return c.json({id,name,parentId,createdAt:now},201)
+})
+
+organizationRoutes.patch('/:orgId/workspaces/:workspaceId/folders/:folderId',async c=>{
+  const userId=c.get('userId'),orgId=c.req.param('orgId'),workspaceId=c.req.param('workspaceId'),folderId=c.req.param('folderId')
+  const member=await membership(c.env.DB,orgId,userId)
+  if(!member||!canWrite(member.role)) throw ApiError.forbidden('Your role is read-only')
+  const body=await readJson<{name?:string;parentId?:string|null}>(c,4096)
+  const current=await c.env.DB.prepare('SELECT id FROM organization_folders WHERE id=?1 AND organization_id=?2 AND workspace_id=?3').bind(folderId,orgId,workspaceId).first()
+  if(!current) throw ApiError.notFound('Folder not found')
+  if(body.name!==undefined){const name=normalize(body.name,80);if(!name)throw ApiError.badRequest('Folder name is required');await c.env.DB.prepare('UPDATE organization_folders SET name=?1,updated_at=?2 WHERE id=?3').bind(name,Date.now(),folderId).run()}
+  if(body.parentId!==undefined){
+    const parentId=body.parentId||null
+    if(parentId===folderId)throw ApiError.badRequest('A folder cannot contain itself')
+    if(parentId&&!await c.env.DB.prepare('SELECT id FROM organization_folders WHERE id=?1 AND organization_id=?2 AND workspace_id=?3').bind(parentId,orgId,workspaceId).first())throw ApiError.notFound('Destination folder not found')
+    let cursor=parentId,depth=0
+    while(cursor&&depth++<100){if(cursor===folderId)throw ApiError.badRequest('Moving this folder would create a folder loop');const row=await c.env.DB.prepare('SELECT parent_id FROM organization_folders WHERE id=?1').bind(cursor).first<{parent_id:string|null}>();cursor=row?.parent_id||null}
+    await c.env.DB.prepare('UPDATE organization_folders SET parent_id=?1,updated_at=?2 WHERE id=?3').bind(parentId,Date.now(),folderId).run()
+  }
+  return c.json({ok:true})
+})
+
+organizationRoutes.delete('/:orgId/workspaces/:workspaceId/folders/:folderId',async c=>{
+  const userId=c.get('userId'),orgId=c.req.param('orgId'),workspaceId=c.req.param('workspaceId'),folderId=c.req.param('folderId')
+  const member=await membership(c.env.DB,orgId,userId)
+  if(!member||!canManage(member.role))throw ApiError.forbidden('Only owners and admins can delete folders')
+  const folder=await c.env.DB.prepare('SELECT id FROM organization_folders WHERE id=?1 AND organization_id=?2 AND workspace_id=?3').bind(folderId,orgId,workspaceId).first()
+  if(!folder)throw ApiError.notFound('Folder not found')
+  const [children,docs]=await Promise.all([
+    c.env.DB.prepare('SELECT COUNT(*) count FROM organization_folders WHERE parent_id=?1').bind(folderId).first<{count:number}>(),
+    c.env.DB.prepare('SELECT COUNT(*) count FROM organization_documents WHERE folder_id=?1 AND deleted_at IS NULL').bind(folderId).first<{count:number}>()
+  ])
+  if((children?.count||0)>0||(docs?.count||0)>0)throw ApiError.badRequest('Move or delete the folder contents before deleting this folder')
+  await c.env.DB.prepare('DELETE FROM organization_folders WHERE id=?1').bind(folderId).run()
+  return c.json({ok:true})
+})
+
 organizationRoutes.get('/:orgId/workspaces/:workspaceId/documents',async c=>{
   const userId=c.get('userId'),orgId=c.req.param('orgId'),workspaceId=c.req.param('workspaceId')
   const member=await membership(c.env.DB,orgId,userId)

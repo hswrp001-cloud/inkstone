@@ -114,8 +114,7 @@ export function AppShell() {
 
         <main ref={workspaceGroupsRef} className="flex min-w-0 flex-1">
           <Suspense fallback={<WorkspaceFallback />}>
-            {orgDocumentMatch ? <OrganizationDocumentWorkspace organizationId={orgDocumentMatch[1]!} workspaceId={orgDocumentMatch[2]!} documentId={orgDocumentMatch[3]!}/> :
-            {showWorkspaceSplit ? (<>
+            {orgDocumentMatch ? <OrganizationDocumentWorkspace organizationId={orgDocumentMatch[1]!} workspaceId={orgDocumentMatch[2]!} documentId={orgDocumentMatch[3]!}/> : (showWorkspaceSplit ? (<>
               <div className="min-w-0" style={{ width: `${effectiveWorkspaceSplitRatio * 100}%` }}>
                 <InlineErrorBoundary><Workspace pane="primary" grouped/></InlineErrorBoundary>
               </div>
@@ -125,8 +124,7 @@ export function AppShell() {
               </div>
             </>) : (<div className="min-w-0 flex-1">
                 <InlineErrorBoundary><Workspace /></InlineErrorBoundary>
-              </div>)}
-            }
+              </div>))}
           </Suspense>
         </main>
       </div>

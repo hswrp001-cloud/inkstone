@@ -54,6 +54,7 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
         setLastSaved(Date.now())
       } catch (error) {
         setError(error instanceof Error ? error.message : String(error))
+        setSaveMode('manual')
       } finally {
         setBusy(false)
       }

@@ -62,7 +62,7 @@ workspaceRoutes.get('/', async (c) => {
   for (const [kind, name] of [['global', 'Global'], ['development', 'Development']] as const) {
     const id = newId()
     await db.prepare(
-      `INSERT INTO workspaces (id, name, kind, owner_id, created_at, updated_at)
+      `INSERT OR IGNORE INTO workspaces (id, name, kind, owner_id, created_at, updated_at)
        SELECT ?1, ?2, ?3, ?4, ?5, ?5
        WHERE NOT EXISTS (
          SELECT 1 FROM workspaces w JOIN workspace_members m ON m.workspace_id = w.id

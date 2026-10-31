@@ -4,6 +4,9 @@ import { DeferredCodeEditor } from '../../editor/CodeEditor'
 import { Preview } from '../preview/Preview'
 import { useSession } from '../../store/session'
 import { Button } from '../../components/primitives'
+import { EditorToolbar } from '../workspace/EditorToolbar'
+import type { EditorView } from '@codemirror/view'
+import { useMemo } from 'react'
 
 export function OrganizationDocumentWorkspace({ organizationId, workspaceId, documentId }: { organizationId:string; workspaceId:string; documentId:string }) {
  const settings=useSession(s=>s.settings)
@@ -14,6 +17,9 @@ export function OrganizationDocumentWorkspace({ organizationId, workspaceId, doc
  const [dirty,setDirty]=useState(false)
  const [busy,setBusy]=useState(false)
  const [error,setError]=useState('')
+ const [view,setView]=useState<EditorView|null>(null)
+ const sources=useMemo(()=>({notes:()=>[],tags:()=>[]}),[])
+ const handlers=useMemo(()=>({uploadFile:async()=>null}),[])
  useEffect(()=>{let active=true;Promise.all([api.organizations.getDocument(organizationId,workspaceId,documentId),api.organizations.workspaces(organizationId)]).then(([d,w])=>{if(!active)return;setTitle(d.title);setContent(d.content);setRole(w.role);setLoaded(true)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[organizationId,workspaceId,documentId])
  const save=async()=>{setBusy(true);setError('');try{await api.organizations.saveDocument(organizationId,workspaceId,documentId,title,content);setDirty(false)}catch(e){setError(e instanceof Error?e.message:String(e))}finally{setBusy(false)}}
  if(!loaded)return <div className="flex h-full flex-1 items-center justify-center">{error||'Loading shared document…'}</div>

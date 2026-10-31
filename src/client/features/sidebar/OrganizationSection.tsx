@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Building2, ChevronRight, FilePlus2, FileText, FolderClosed, FolderPlus, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Building2, ChevronRight, FilePlus2, FileText, FolderClosed, FolderPlus, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { SectionLabel } from '../../components/primitives'
@@ -56,7 +56,7 @@ function FolderBranch({orgId,workspaceId,folder,role,depth=0}:{orgId:string;work
         <span className="min-w-0 flex-1 truncate">{folder.name}</span>
         <span className="text-[10px] text-[var(--text-quaternary)]">{loaded?folders.length+docs.length:''}</span>
       </button>
-      {canWrite&&<button type="button" title="New document in folder" onClick={()=>void addDocument()} className="flex size-6 shrink-0 items-center justify-center rounded text-[var(--text-quaternary)] opacity-0 hover:bg-[var(--bg-active)] hover:text-[var(--text-primary)] group-hover:opacity-100"><FilePlus2 size={12}/></button>}
+      {canWrite&&<button type="button" title="New document in folder" onClick={()=>void addDocument()} className="flex size-6 shrink-0 items-center justify-center rounded text-[var(--text-quaternary)] opacity-60 hover:bg-[var(--bg-active)] hover:text-[var(--text-primary)] group-hover:opacity-100"><FilePlus2 size={12}/></button>}
       {canWrite&&<button type="button" title="New subfolder" onClick={()=>void addFolder()} className="flex size-6 shrink-0 items-center justify-center rounded text-[var(--text-quaternary)] opacity-0 hover:bg-[var(--bg-active)] hover:text-[var(--text-primary)] group-hover:opacity-100"><FolderPlus size={12}/></button>}
       {canManage&&<button type="button" title="Rename folder" onClick={()=>void rename()} className="flex size-6 shrink-0 items-center justify-center rounded text-[var(--text-quaternary)] opacity-0 hover:bg-[var(--bg-active)] hover:text-[var(--text-primary)] group-hover:opacity-100"><Pencil size={11}/></button>}
       {canManage&&<button type="button" title="Delete empty folder" onClick={()=>void remove()} className="flex size-6 shrink-0 items-center justify-center rounded text-[var(--text-quaternary)] opacity-0 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100"><Trash2 size={11}/></button>}

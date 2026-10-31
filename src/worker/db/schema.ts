@@ -570,6 +570,8 @@ const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
         ON workspace_notes(workspace_id, deleted_at, updated_at DESC)`,
       `CREATE INDEX IF NOT EXISTS idx_workspace_members_user
         ON workspace_members(user_id, workspace_id)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_workspaces_owner_personal_kind
+        ON workspaces(owner_id, kind) WHERE kind IN ('global', 'development')`,
       `CREATE TABLE IF NOT EXISTS workspace_invites (
         id TEXT PRIMARY KEY,
         workspace_id TEXT NOT NULL,
